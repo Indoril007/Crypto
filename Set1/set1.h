@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef NDEBUG
 #  include <assert.h>
@@ -8,8 +9,135 @@
 #  define assert(x) /* empty macro to prevent errors */
 #endif
 
-// Convert a Base64 value to its ASCII Base64 representation
-uint8_t Base64_ASCII(uint8_t val) {
+/*****************************************************************************************************************
+* isLowAlpha
+* isCapAlpha
+* isAlpha
+* isNum
+* isAlphaNum
+*
+* Contains the following conversion functions
+* ASCII_Hex 		-> A single ASCII hex representative character to a hex value
+* Hex_ASCII 		-> A single Hex value to its correct ASCII character representation
+* Hex_Combine		-> Two hex values combined into a single byte
+* Byte_HighHex		-> Take Hex value from most significant 4 bits of a byte
+* Byte_LowHex		-> Take Hex value from least significant 4 bits of a byte
+* ASCII_HexByte 	-> Two ASCII hex representative characters to a single byte
+* Byte_HighHexASCII	-> Get the ASCII representation of the Hex value of the most significant 4 bits of a byte
+* Byte_LowHexASCII	-> Get the ASCII representation of the Hex value of the least significant 4 bits of a byte
+* ASCII_Base64		-> Convert ASCII into Base 64
+* Base64_ASCII		-> Convert Base64 into ASCII
+* Hex_Base64		-> Convert Hex to Base64
+* Base64_Hex		-> Convert Base64 to Hex
+* Hex_HighBase64
+* Hex_LowBase64
+* Byte_HighBase64
+* Byte_HighMidBase64
+* Byte_LowMidBase64
+* Byte_LowBase64
+******************************************************************************************************************/
+
+bool isLowAlpha(char val) {
+	return ((val >= 97 && val <= 122));
+}
+
+bool isCapAlpha(char val) {
+	return ((val >= 65 && val <= 90));
+}
+
+bool isAlpha(char val) {
+	return (isLowAlpha(val) || isCapAlpha(val));
+}
+
+bool isNum(char val) {
+	return ((val >= 48 && val <= 57));
+}
+
+bool isAlphaNum(char val) {
+	return (isAlpha(val) || isNum(val));
+}
+
+// A single ASCII hex representative character to a hex value
+uint8_t ASCII_Hex(char val) {
+	assert((val >= 48) && (val <= 57) || (val >= 65 && val <= 70) || (val >= 97 && val <= 102));
+	
+	uint8_t out;
+	
+	if((val >= 48) && (val <= 57)) {
+		return (val - 48);
+	} else if ((val >= 65 && val <= 70)) {
+		return (val - 55);
+	} else {
+		return (val - 87);
+	}
+	
+	return -1;
+}
+
+// A single Hex value to its correct ASCII character representation
+char Hex_ASCII(uint8_t val) {
+	assert(val < 16);
+	if (val < 10) {
+		return val + 48;
+	} else if (val < 16) {
+		return val + 87;
+	}
+	
+	return -1;
+}
+
+// Two hex values combined into a single byte
+uint8_t Hex_combine(uint8_t A, uint8_t B) {
+	assert(A < 16 && B < 16);
+	return (A << 4) | B;
+}
+
+// Take Hex value from most significant 4 bits of a byte
+uint8_t Byte_HighHex(uint8_t val) {
+	return val >> 4;
+}
+
+// Take Hex value from least significant 4 bits of a byte
+uint8_t Byte_LowHex(uint8_t val) {
+	return val & 15;
+}
+
+// Two ASCII hex representative characters to a single byte
+uint8_t ASCII_HexByte(char A, char B) {
+	return Hex_combine(ASCII_Hex(A), ASCII_Hex(B));
+}
+
+// Get the ASCII representation of the Hex value of the most significant 4 bits
+char Byte_HighHexASCII(uint8_t val){
+	return Hex_ASCII(Byte_HighHex(val));
+}
+
+// Get the ASCII representation of the Hex value of the least significant 4 bits
+char Byte_LowHexASCII(uint8_t val){
+	return Hex_ASCII(Byte_LowHex(val));
+}
+
+// Convert ASCII into Base 64
+uint8_t ASCII_Base64(char val) {
+	assert(((val >= 65) && (val <=90)) || ((val >= 97) && (val <=122)) || ((val >= 48) && (val <= 57)) || (val == 43) || (val == 47));
+	
+	if (val >= 65 && val <=90) {
+		return val - 65;
+	} else if (val >=97 && val <= 122) {
+		return val - 71;
+	} else if (val >= 48 && val <= 57) {
+		return val + 4;
+	} else if (val == 43) {
+		return 62;
+	} else if (val == 47) {
+		return 63;
+	}
+	
+	return -1;
+}
+
+// Convert Base64 into ASCII
+char Base64_ASCII(uint8_t val) {
 	assert(val <= 63);
 
 	if (val <= 25) {
@@ -27,100 +155,34 @@ uint8_t Base64_ASCII(uint8_t val) {
 	return -1;
 }
 
-// Convert hex represented in ASCII to its actual value 
-uint8_t ASCII_Hex(uint8_t val) {
-	// check that value passed is a valid hexadecimal character
-	assert((val >= 48) && (val <= 57) || (val >= 65 && val <= 70) || (val >= 97 && val <= 102));
-	
-	uint8_t out;
-	
-	if((val >= 48) && (val <= 57)) {
-		return (val - 48);
-	} else if ((val >= 65 && val <= 70)) {
-		return (val - 55);
-	} else {
-		return (val - 87);
-	}
-	
-	return -1;
+// Take the most significant 6 bits of three hex values and return the Base64 value
+uint8_t Hex_HighBase64(uint8_t A, uint8_t B) {
+	assert(A < 16 && B < 16);
+	return (A << 2) | (B >> 2);
 }
 
-char Hex_ASCII(uint8_t val) {
-	assert(val < 16);
-	if (val < 10) {
-		return val + 48;
-	} else if (val < 16) {
-		return val + 87;
-	}
-	
-	return -1;
+// Take the least significant 6 bits of three hex values and return the Base64 value
+uint8_t Hex_LowBase64(uint8_t B, uint8_t C) {
+	assert(B < 16 && C < 16);
+	return ((B << 4) | C) & 63;
 }
 
-// combine two hex values into a single byte
-uint8_t Hex_combine(uint8_t ms4b, uint8_t ls4b) {
-	assert(ms4b < 16 && ls4b < 16);
-	return (ms4b << 4) | ls4b;
+// Take the most significant 6 bits of 3 bytes and return the Base64 value
+uint8_t Byte_HighBase64(uint8_t A) {
+	return (A >> 2);
 }
 
-//Convert hex values to the same values in Base64
-uint8_t *Hex_Base64(uint8_t *input, uint32_t size){
-	assert((size % 3) == 0); // Must be divisible by three to convert to Base64. Pad input if necessary.
-	
-	uint32_t i = 0;
-	uint32_t j = 0;
-	uint8_t *output;
-	output = (uint8_t *) malloc((size / 3) * 2);
-	
-	while (i < (size - 2)) {
-		output[j++] = (input[i] << 2) | (input[i+1] >> 2);
-		output[j++] = ((input[i+1] << 4) | input[i+2]) & 63;
-		i += 3;
-	}
-	
-	return output;	
+// Take the second most significant 6 bits of 3 bytes and return the Base64 value
+uint8_t Byte_HighMidBase64(uint8_t A, uint8_t B) {
+	return ((A << 4) | (B >> 4)) & 63;
 }
 
-// String formatting and padding performed before converting from ASCII -> hex -> base64 -> ASCII
-char *String_Hex_Base64(char *hexString) {
-	char *outString;
-	size_t size = strlen(hexString);
-	size_t i;
-	uint8_t padding = (size % 3);
-	uint8_t *input, *output;
-	input = (uint8_t *) malloc(size + (padding * 2));
-	outString = (char *) malloc((((size + (padding * 2)) / 3) * 2) + 1);
-	
-	for(i = 0; i < size; i++) {
-		*(input + i) = ASCII_Hex(*(hexString + i));
-	}
-	for(i = size; i < (size + (padding * 2)); i++) {
-		*(input + i) = 0;
-	}
-	
-	output = Hex_Base64(input, size + padding * 2);
-	for(i = 0; i < ((((size + padding * 2) / 3) * 2) - padding); i++) {
-		*(outString + i) = Base64_ASCII(*(output + i));
-	}
-	for ( ; i < (((size + padding * 2) / 3) * 2); i++){
-		*(outString + i) = '=';
-	}
-	
-	*(outString + i) = '\0';
-	
-	return outString;
-}	
+// Take the second least significant 6 bits of 3 bytes and return the Base64 value
+uint8_t Byte_LowMidBase64(uint8_t B, uint8_t C) {
+	return ((B << 2) | (C >> 6) & 63);
+}
 
-char *XOR_Hex_String(char *A, char *B) {
-	assert(strlen(A) == strlen(B));
-	size_t len = strlen(A);
-	size_t i;
-	char *output;
-	output = (char *) malloc(len + 1);
-	
-	for(i = 0; i < len; i++) {
-		*(output + i) = Hex_ASCII(ASCII_Hex(*(A + i)) ^ ASCII_Hex(*(B + i)));
-	}
-	*(output + i) = '\0';
-	
-	return output;
+// Take the least significant 6 bits of 3 bytes and return the Base64 value
+uint8_t Byte_LowBase65(uint8_t C) {
+	return (C & 63);
 }
