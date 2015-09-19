@@ -10,13 +10,14 @@
 #endif
 
 /*****************************************************************************************************************
-* isLowAlpha
-* isCapAlpha
-* isAlpha
-* isNum
-* isAlphaNum
+* CHAR CHECK FUNCTIONS:
+* isLowAlpha		-> Is the character a lower case letter?
+* isCapAlpha		-> Is the character a capital letter?
+* isAlpha			-> Is the character a letter?	
+* isNum				-> Is the character a number?
+* isAlphaNum		-> Is the character a number or a letter?
 *
-* Contains the following conversion functions
+* CONVERSION FUNCTIONS:
 * ASCII_Hex 		-> A single ASCII hex representative character to a hex value
 * Hex_ASCII 		-> A single Hex value to its correct ASCII character representation
 * Hex_Combine		-> Two hex values combined into a single byte
@@ -29,30 +30,38 @@
 * Base64_ASCII		-> Convert Base64 into ASCII
 * Hex_Base64		-> Convert Hex to Base64
 * Base64_Hex		-> Convert Base64 to Hex
-* Hex_HighBase64
-* Hex_LowBase64
-* Byte_HighBase64
-* Byte_HighMidBase64
-* Byte_LowMidBase64
-* Byte_LowBase64
+* Hex_HighBase64	-> Take the most significant 6 bits of three hex values and return the Base64 value
+* Hex_LowBase64		-> Take the least significant 6 bits of three hex values and return the Base64 value
+* Byte_HighBase64	-> Take the most significant 6 bits of 3 bytes and return the Base64 value
+* Byte_HighMidBase64-> Take the second most significant 6 bits of 3 bytes and return the Base64 value
+* Byte_LowMidBase64	-> Take the second least significant 6 bits of 3 bytes and return the Base64 value 
+* Byte_LowBase64	-> Take the least significant 6 bits of 3 bytes and return the Base64 value
+* Base64_HighByte	->
+* Base64_MidByte	->
+* Base64_LowByte	->
 ******************************************************************************************************************/
 
+// Is the character a lower case letter?
 bool isLowAlpha(char val) {
 	return ((val >= 97 && val <= 122));
 }
 
+// Is the character a capital letter?
 bool isCapAlpha(char val) {
 	return ((val >= 65 && val <= 90));
 }
 
+// Is the character a letter?	
 bool isAlpha(char val) {
 	return (isLowAlpha(val) || isCapAlpha(val));
 }
 
+// Is the character a number?
 bool isNum(char val) {
 	return ((val >= 48 && val <= 57));
 }
 
+// Is the character a number or a letter?
 bool isAlphaNum(char val) {
 	return (isAlpha(val) || isNum(val));
 }
@@ -186,3 +195,19 @@ uint8_t Byte_LowMidBase64(uint8_t B, uint8_t C) {
 uint8_t Byte_LowBase65(uint8_t C) {
 	return (C & 63);
 }
+ 
+uint8_t Base64_HighByte(uint8_t A, uint8_t B) {
+	assert(A < 64 && B < 64);
+	return ((A << 2) | (B >> 4));
+}
+
+uint8_t Base64_MidByte(uint8_t B, uint8_t C) {
+	assert(B < 64 && C < 64);
+	return ((B << 4) | (C >> 2));
+}
+
+uint8_t Base64_LowByte(uint8_t C, uint8_t D) {
+	assert(C < 64 && D < 64);
+	return ((C << 6) | D);
+}
+
