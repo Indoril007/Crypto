@@ -1,4 +1,5 @@
 #include <set1.h>
+#include <bag.h>
 
 uint8_t *Base64_Byte(char *input) {
 	size_t len = strlen(input);
@@ -30,26 +31,60 @@ uint8_t hamming_distance(uint8_t *input_1, uint8_t *input_2, uint8_t len) {
 	return hamming_distance;
 }
 
-uint8_t determine_keysize(uint8_t *input, size_t size) {
-	uint8_t i, keysize[5], min;
-	
-	
+void determine_keysize(uint8_t *input) {
+	uint8_t i, j, min, dist;
+	Bag *keyBag;
+	keyBag = Bag_create(10);
 	
 	for(i = 2; i <= 40; i++) {
-		if((hamming_distance(input, input+i, i) / i) < min) {
-			keysize = i;
+		dist = 0;
+		for (j = 0; j < 5; j++) {
+			dist += hamming_distance((j * i) + input, (j * i) + input+i, i);
+		}
+		
+		if((dist < keyBag->max) || (keyBag->size < keyBag->capacity)) {
+			if(keyBag->size < keyBag->capacity) {
+				Bag_addelement(keyBag, dist, i);
+			} else {
+				Bag_removemax(keyBag);
+				Bag_addelement(keyBag, dist, i);
+			}
 		}
 	}
+	
+	while(keyBag->size != 0) {
+		printf("%d ", Bag_pop(keyBag));
+	}
+	printf("\n");
+	
+	return;
 }
 
-
-
 int main() {
-	char *input_1, *input_2;
-	input_1 = "this is a test";
-	input_2 = "wokka wokka!!!";
+	FILE *fp;
+	char *input;
+	uint8_t *line_output, *output;
+	input = (char *) malloc(61);
+	line_output = (uint8_t *) malloc(40);
+	output = (uint8_t *) malloc((40 * 64) - 4);
+	size_t i = 0;
+	uint8_t j;
 	
-	size_t len = strlen(input_1);
 	
-	printf("\n%s\n%s\n%d", input_1, input_2, hamming_distance(input_1, input_2, len));
+	fp = fopen("input2.txt", "r");
+	while (fscanf(fp, "%s ", input) == 1) {
+		line_output = ASCII_Base64_ByteStream(input, strlen(input));
+		for(j = 0; j < 40; j++) {
+			*(output + j + i) = *(line_output + j); 
+		}
+		i += 40;
+	}
+	
+	fclose(fp);
+	
+	determine_keysize(output);
+	
+	
+	
+	return 0;
 }

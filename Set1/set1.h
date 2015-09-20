@@ -26,6 +26,7 @@
 * ASCII_HexByte 	-> Two ASCII hex representative characters to a single byte
 * Byte_HighHexASCII	-> Get the ASCII representation of the Hex value of the most significant 4 bits of a byte
 * Byte_LowHexASCII	-> Get the ASCII representation of the Hex value of the least significant 4 bits of a byte
+* ASCII_Hex_ByteStream
 * ASCII_Base64		-> Convert ASCII into Base 64
 * Base64_ASCII		-> Convert Base64 into ASCII
 * Hex_Base64		-> Convert Hex to Base64
@@ -126,6 +127,21 @@ char Byte_LowHexASCII(uint8_t val){
 	return Hex_ASCII(Byte_LowHex(val));
 }
 
+uint8_t *ASCII_Hex_ByteStream(char *input, size_t size) {
+	assert(size % 2 == 0);
+	size = size / 2;
+	uint8_t *output = (uint8_t *) malloc(size);
+	size_t i;
+	size_t j = 0;
+	
+	for(i = 0; i < size; i++) {
+		*(output + i) = ASCII_HexByte(*(input + j), *(input + j + 1));
+		j+=2;
+	}
+	
+	return output;
+}
+
 // Convert ASCII into Base 64
 uint8_t ASCII_Base64(char val) {
 	assert(((val >= 65) && (val <=90)) || ((val >= 97) && (val <=122)) || ((val >= 48) && (val <= 57)) || (val == 43) || (val == 47));
@@ -209,5 +225,31 @@ uint8_t Base64_MidByte(uint8_t B, uint8_t C) {
 uint8_t Base64_LowByte(uint8_t C, uint8_t D) {
 	assert(C < 64 && D < 64);
 	return ((C << 6) | D);
+}
+
+uint8_t *ASCII_Base64_ByteStream(char *input, size_t size) {
+	assert(size % 4 == 0);
+	uint8_t *output = (uint8_t *) malloc((size / 4) * 3);
+	size_t i = 0, j = 0;
+	
+	while(i < size && (*(input + i + 3)) != '=') {
+		*(output + j++) = Base64_HighByte(ASCII_Base64(*(input + i)), ASCII_Base64(*(input + i + 1)));
+		*(output + j++) = Base64_MidByte(ASCII_Base64(*(input + i + 1)), ASCII_Base64(*(input + i + 2)));
+		*(output + j++) = Base64_LowByte(ASCII_Base64(*(input + i + 2)), ASCII_Base64(*(input + i + 3)));
+		i+=4;
+	} 
+	if ((*(input + i + 3)) == '=') {
+		if ((*(input + i + 2)) == '=') {
+			*(output + j++) = Base64_HighByte(ASCII_Base64(*(input + i)), ASCII_Base64(*(input + i + 1)));
+			*(output + j++) = Base64_MidByte(0, 0);
+			*(output + j++) = Base64_LowByte(0, 0);
+		} else {
+			*(output + j++) = Base64_HighByte(ASCII_Base64(*(input + i)), ASCII_Base64(*(input + i + 1)));
+			*(output + j++) = Base64_MidByte(ASCII_Base64(*(input + i + 1)), ASCII_Base64(*(input + i + 2)));
+			*(output + j++) = Base64_LowByte(0, 0);
+		}
+	}
+	
+	return output;
 }
 
